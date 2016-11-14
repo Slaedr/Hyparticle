@@ -13,16 +13,19 @@ module Particles
 export HyparticleSimulation
 
 """
-An immutable type representing the set of particles and their properties.
+An type representing the set of particles and their properties.
 """
-immutable ParticleSet
-	x::Array{Float64}
-	v::Array{Float64}
+type ParticleSet
+	n::UInt32				# number of particles
+	x::Array{Float64}		# positions
+	v::Array{Float64}		# velocities
+	u::Array{Float64}		# values of conserved variable
+	dt::Array{Float64}		# time before collision
 end
 
-immutable HyparticleSimulation
-	pset::ParticleSet				# Set of particles in the simulation
-	dt::Float32						# time step
+type HyparticleSimulation
+	pset::ParticleSet					# Set of particles in the simulation
+	dts::Float64						# time step
 end
 
 end
