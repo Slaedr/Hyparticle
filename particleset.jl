@@ -4,13 +4,12 @@ Module for particle-based method to solve Burgers' equation.
 @date October 2016
 """
 
-"""
-Module for Hyparticle functionality for Burgers' equation
-"""
-module BurgersParticles
+
+# Module for base Hyparticle data structures.
+module Particles
 
 # Stuff to be exported to code that import this module
-export real, ParticleSet, burgersTimeSteps!
+export real, Particle, ParticleList, deleteParticleAfter, insertParticleAfter, initialize
 
 """ The floating-point type to be used """
 real = Float64
@@ -22,6 +21,10 @@ type Particle
 	u::real
 	dt::real
 	next::Particle
+
+	function Particle()
+		return new(0.0,0.0,0.0,0.0)
+	end
 end
 
 type ParticleList
@@ -34,17 +37,53 @@ type ParticleList
 	hi::real				# initial sampling resolution
 
 	function ParticleList(n, xstart, xend, dmaxfactor=4.0/3.0, dmin=eps(real))
-		# set up initial list
-		first1 = Particle(0.0,0.0,0.0,0.0,0)
+		# set up initial list; note that one extra particle is allocated for convenience
+		first1 = Particle()
 		cur = first1
 		for i = 1:n
-			cur.next = Particle(0.0,0.0,0.0,0.0,0)
+			cur.next = Particle()
 			cur = cur.next
 		end
-		cur = 0
+		
 		hi = (xend-xstart)/n
-		dmax = h*dmaxfactor
-		return new(first1,n,xstart,xend,dmax.dmin,hi)
+		dmax = hi*dmaxfactor
+		return new(first1,n,xstart,xend,dmax,dmin,hi)
+	end
+end
+
+""" Deletes the next particle after par, ie the one referred to by par.next. 
+ Note that the memory is released only when the GC sees fit."""
+function deleteParticleAfter(plist::ParticleList, par::Particle)
+	nexttonext = par.next.next
+	par.next = nexttonext
+	n -= 1
+end
+
+""" Add a particle newpar to the list after particle par."""
+function insertParticleAfter(plist::ParticleList, newpar::Particle, par::Particle)
+	temp = par.next
+	par.next = newpar
+	newpar.next = temp
+	n += 1
+end
+
+""" Initialize the list with, for instalce, an initial condition."""
+function initialize(plist::ParticleList, pos, vel, uval)
+	cur = plist.first
+	for i = 1:plist.n
+		cur.x = pos[i]
+		cur.v = vel[i]
+		cur.u = uval[i]
+		cur = cur.next
+	end
+end
+
+""" For debugging"""
+function printList(plist::ParticleList)
+	cur = plist.first
+	for i = 1:plist.n
+		println(cur.x, " ", cur.v, " ", cur.u, " ", cur.dt)
+		cur = cur.next
 	end
 end
 
@@ -72,22 +111,6 @@ type ParticleSet
 		dmax = h*dmaxfactor
 		return new(n,xstart,xend,x,v,u,dt,dmax,dmin,hi)
 	end
-end
-
-"""
-Computes the allowable time step for each particle based on current positions and speeds for Burgers' flux.
-
-Returns the minimum time step.
-Note: dt[i] > 0 if the ith particle is faster than the next particle.
-"""
-function burgersTimeSteps!(p::ParticleSet)
-	# compute time it takes for particle i to get to within dmin distance of particle i+1
-	mdt = 1.0
-	for i = 1:n-1
-		p.dt[i] = -(p.x[i+1]-p.dmin-p.x[i])/(p.u[i+1]-p.u[i])
-		mdt = min(mdt,p.dt[i])
-	end
-	return mdt
 end
 
 end
