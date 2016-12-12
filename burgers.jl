@@ -23,23 +23,38 @@ function burgersTimeSteps!(p::ParticleList)
 end
 
 """
-One step of particle management. Note that boundaries are not treated.
+One step of particle management. p is the input list and q is the output list. Note that boundaries are not treated.
 
 When distance between adjacent particles is greater than dmax, a new particle is inserted.
 when distance between adjacent particles is less than dmin, the two particles are deleted and a new one is inserted.
 Value of the inserted particle is computed from local conservation.
 """
-function burgersParticleManagement!(p::ParticleList)
+function burgersParticleManagement!(p::ParticleList, q::ParticleList)
+	prev = p.first
 	cur = p.first.next
+	prevq = q.first
+	curq = q.first.next
 	for i = 2:n-2
 		nxt = cur.next
 		dist = nxt.x - cur.x
 		if dist < p.dmin
-			# TODO: remove the two particles and insert a new one, update n
+			# remove the two particles and insert a new one, update n
+			newq = Particle((nxt.x+cur.x)/2.0,0.0,0.0,0.0,nothing)
+			# compute the new particle's converved variable
+			x1 = prev.x; x2 = cur.x; x23 = newq.x; x3 = nxt.x; x4 = nxt.next.x
+			u1 = prev.u; u2 = cur.u; u3 = nxt.u; u4 = nxt.next.u
+			tworexp = (x2-x1)*(u2+u1) + (x3-x2)*(u3+u2) + (x4-x3)*(u4+u3)
+			newq.u = (tworexp - (x23-x1)*u1 - (x4-x23)*u4)/(x4-x1)
+			# add the new particle to list q
+			newq.next = curq.next.next
+			prevq.next = newq
 		elseif dist > dmax
 			# TODO: insert a new particle, update n
 		end
+		prev = prev.next
 		cur = cur.next
+		prevq = prevq.next
+		curq = curq.next
 	end
 	# TODO: handle boundaries
 end
