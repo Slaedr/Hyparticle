@@ -35,6 +35,7 @@ type ParticleList
 	dmax::real				# max distance between adjacent particles
 	dmin::real				# min distance between adjacent particles
 	hi::real				# initial sampling resolution
+	gdt::real				# global time step
 
 	function ParticleList(n, xstart, xend, dmaxfactor=4.0/3.0, dmin=eps(real))
 		# set up initial list; note that one extra particle is allocated for convenience
@@ -47,7 +48,7 @@ type ParticleList
 		
 		hi = (xend-xstart)/n
 		dmax = hi*dmaxfactor
-		return new(first1,n,xstart,xend,dmax,dmin,hi)
+		return new(first1,n,xstart,xend,dmax,dmin,hi,0.0)
 	end
 end
 
