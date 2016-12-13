@@ -23,7 +23,7 @@ type Particle
 	next::Particle
 
 	function Particle()
-		return new(0.0,0.0,0.0,0.0)
+		return new(0.0,0.0,0.0,0.0,nothing)
 	end
 end
 
@@ -37,7 +37,7 @@ type ParticleList
 	hi::real				# initial sampling resolution
 	gdt::real				# global time step
 
-	function ParticleList(n, xstart, xend, dmaxfactor=4.0/3.0, dmin=eps(real))
+	function ParticleList(n, xstart, xend, dmaxfactor=4.0/3.0, dmin=100*eps(real))
 		# set up initial list; note that one extra particle is allocated for convenience
 		first1 = Particle()
 		cur = first1
@@ -54,14 +54,14 @@ end
 
 """ Deletes the next particle after par, ie the one referred to by par.next. 
  Note that the memory is released only when the GC sees fit."""
-function deleteParticleAfter(plist::ParticleList, par::Particle)
+function deleteParticleAfter!(plist::ParticleList, par::Particle)
 	nexttonext = par.next.next
 	par.next = nexttonext
 	n -= 1
 end
 
 """ Add a particle newpar to the list after particle par."""
-function insertParticleAfter(plist::ParticleList, newpar::Particle, par::Particle)
+function insertParticleAfter!(plist::ParticleList, newpar::Particle, par::Particle)
 	temp = par.next
 	par.next = newpar
 	newpar.next = temp
@@ -69,7 +69,7 @@ function insertParticleAfter(plist::ParticleList, newpar::Particle, par::Particl
 end
 
 """ Initialize the list with, for instalce, an initial condition."""
-function initialize(plist::ParticleList, pos, vel, uval)
+function initialize!(plist::ParticleList, pos, vel, uval)
 	cur = plist.first
 	for i = 1:plist.n
 		cur.x = pos[i]
@@ -79,11 +79,37 @@ function initialize(plist::ParticleList, pos, vel, uval)
 	end
 end
 
+"""
+Copies the particles' positions and conserved variable values into arrays and returns them.
+"""
+function outputToArrays(p::ParticleList)
+	xout = zeros(p.n)
+	uout = zeros(p.n)
+	cur = p.first
+	for i = 1:p.n
+		xout[i] = cur.x
+		uout[i] = cur.u
+		cur = cur.next
+	end
+	return (xout,uout)
+end
+
 """ For debugging"""
 function printList(plist::ParticleList)
 	cur = plist.first
 	for i = 1:plist.n
 		println(cur.x, " ", cur.v, " ", cur.u, " ", cur.dt)
+		cur = cur.next
+	end
+end
+
+"""
+Move particles using computed time step.
+"""
+function moveParticles!(p::ParticleList)
+	cur = p.first
+	for i = 1:n
+		cur.x += cur.v*p.gdt
 		cur = cur.next
 	end
 end
