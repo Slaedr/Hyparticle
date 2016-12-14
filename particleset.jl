@@ -21,7 +21,7 @@ type Particle
 	v::real
 	u::real
 	dt::real
-	next::Particle
+	next#::Particle
 
 	function Particle()
 		return new(0.0,0.0,0.0,0.0)

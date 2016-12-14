@@ -87,11 +87,12 @@ Apply Dirichlet BC at left. Also remove extra particles at right.
 We simply insert an element exactly at the left boundary having the boundary value bvalue.
 """
 function applyDirichletBC!(p::ParticleList, bvalue::Particles.real)
+	# if the fisrt particle is too far from the left boundary, insert a new particle
 	if p.first.x - p.xstart > p.dmax
 		newp = Particle()
 		newp.x = xstart
 		newp.u = bvalue
-		newp.v = bvalue
+		newp.v = newp.u
 		newp.next = p.first
 		p.first = newp
 		p.n += 1
@@ -101,26 +102,28 @@ function applyDirichletBC!(p::ParticleList, bvalue::Particles.real)
 	cur = p.first.next
 	prev = p.first
 	for i = 3:p.n
+		print(cur.x, " ", cur.u, ", ")
 		cur = cur.next
 		prev = prev.next
 	end
 	if cur.x > p.xend
 		prev.next = nothing
-		n -= 1
+		p.n -= 1
 	end
+	println(" ")
 end
 
 """
 Sets a sinosoidal initial condition.
 """
-function initsin(xarr)
+function initsin(xarr,bval,amp)
 	a = xarr[1]; b = xarr[end]
 	wl = (b-a)/5.0
 	ws = a + (b-a)/10.0
-	ic = 1.5*ones(xarr)
+	ic = bval*ones(xarr)
 	for i = 1:length(xarr)
 		if xarr[i] >= ws && xarr[i] <= ws+wl
-			ic[i] = 1.5+sin(2*pi*1.0/wl*(xarr[i]-ws))
+			ic[i] = bval+amp*sin(2*pi*1.0/wl*(xarr[i]-ws))
 		end
 	end
 	return ic
@@ -129,13 +132,13 @@ end
 """
 Main time-stepping loop for Burgers' equation.
 """
-function burgersLoop(N, xstart, xend, ttime, maxiter)
+function burgersLoop(N, xstart, xend, bvalue, initamp, ttime, maxiter)
 
 	plist = ParticleList(N, xstart, xend)
 
 	# set initial conditions
 	pos = linspace(xstart,xend,N)
-	uval = initsin(pos)
+	uval = initsin(pos,bvalue,initamp)
 	vval = zeros(uval); vval[:] = uval[:]
 	#plot(pos,vval)
 	#show()
@@ -146,6 +149,7 @@ function burgersLoop(N, xstart, xend, ttime, maxiter)
 		burgersTimeSteps!(plist)
 		moveParticles!(plist)
 		burgersParticleManagement!(plist)
+		applyDirichletBC!(plist,bvalue)
 		if step % 10 == 0
 			println("Step ", step, ", time = ", t, ", time step = ", plist.gdt, ", n = ", plist.n)
 		end
@@ -161,15 +165,17 @@ end
 
 # main
 
-N = 150
+N = 200
 xstart = 0.0
 xend = 4*pi
+bvalue = 1.5
+amplitude = 1.0
 finaltime = 2.0
-maxtimesteps = 1000
+maxtimesteps = 100
 
 println("Hyparticle for Burgers' equation - Initial data:")
-println("  h = ", (xend-xstart)/N, ", final time = ", finaltime)
-xso,uso=burgersLoop(N,xstart,xend,finaltime,maxtimesteps)
+println("  N = ", N, ", h = ", (xend-xstart)/N, ", final time = ", finaltime)
+xso,uso=burgersLoop(N,xstart,xend,bvalue,amplitude,finaltime,maxtimesteps)
 plot(xso,uso)
 grid("on")
 show()
