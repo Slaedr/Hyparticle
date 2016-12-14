@@ -9,7 +9,8 @@ Module for particle-based method to solve Burgers' equation.
 module Particles
 
 # Stuff to be exported to code that import this module
-export real, Particle, ParticleList, deleteParticleAfter, insertParticleAfter, initialize
+export real, Particle, ParticleList, initialize!, moveParticles!, outputToArrays
+export deleteParticleAfter!, insertParticleAfter!
 
 """ The floating-point type to be used """
 real = Float64
@@ -23,7 +24,7 @@ type Particle
 	next::Particle
 
 	function Particle()
-		return new(0.0,0.0,0.0,0.0,nothing)
+		return new(0.0,0.0,0.0,0.0)
 	end
 end
 
@@ -108,7 +109,7 @@ Move particles using computed time step.
 """
 function moveParticles!(p::ParticleList)
 	cur = p.first
-	for i = 1:n
+	for i = 1:p.n
 		cur.x += cur.v*p.gdt
 		cur = cur.next
 	end

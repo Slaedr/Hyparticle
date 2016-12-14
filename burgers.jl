@@ -3,6 +3,7 @@
 
 include("particleset.jl")
 using Particles
+using PyPlot
 
 """
 Computes the allowable time step for each particle based on current positions and speeds for Burgers' flux.
@@ -17,8 +18,15 @@ function burgersTimeSteps!(p::ParticleList)
 	p.gdt = 1.0
 	for i = 1:p.n-1
 		nxt = cur.next
-		cur.dt = -(nxt.x-p.dmin/2.0-cur.x)/(nxt.u-cur.u)
-		p.gdt = min(p.gdt,cur.dt)
+		if abs(nxt.v-cur.v) > eps(Particles.real)
+			cur.dt = -(nxt.x-p.dmin/2.0-cur.x)/(nxt.v-cur.v)
+		else
+			cur.dt = 1.0
+		end
+		#print(cur.dt, " ")
+		if cur.dt > 0.0
+			p.gdt = min(p.gdt,cur.dt)
+		end
 		cur = cur.next
 	end
 end
@@ -78,7 +86,7 @@ Apply Dirichlet BC at left. Also remove extra particles at right.
 
 We simply insert an element exactly at the left boundary having the boundary value bvalue.
 """
-function applyDirichletBC!(p::ParticleList, bvalue::real)
+function applyDirichletBC!(p::ParticleList, bvalue::Particles.real)
 	if p.first.x - p.xstart > p.dmax
 		newp = Particle()
 		newp.x = xstart
@@ -109,10 +117,10 @@ function initsin(xarr)
 	a = xarr[1]; b = xarr[end]
 	wl = (b-a)/5.0
 	ws = a + (b-a)/10.0
-	ic = zeros(xarr)
+	ic = 1.5*ones(xarr)
 	for i = 1:length(xarr)
 		if xarr[i] >= ws && xarr[i] <= ws+wl
-			ic[i] = sin(2*pi*wl*(xarr[i]-ws))
+			ic[i] = 1.5+sin(2*pi*1.0/wl*(xarr[i]-ws))
 		end
 	end
 	return ic
@@ -121,7 +129,7 @@ end
 """
 Main time-stepping loop for Burgers' equation.
 """
-function burgersLoop(N, xstart, xend, ttime)
+function burgersLoop(N, xstart, xend, ttime, maxiter)
 
 	plist = ParticleList(N, xstart, xend)
 
@@ -129,27 +137,40 @@ function burgersLoop(N, xstart, xend, ttime)
 	pos = linspace(xstart,xend,N)
 	uval = initsin(pos)
 	vval = zeros(uval); vval[:] = uval[:]
+	#plot(pos,vval)
+	#show()
 	initialize!(plist,pos,vval,uval)
 
 	t = 0; step = 0
-	while t < ttime
+	while t < ttime && step < maxiter
 		burgersTimeSteps!(plist)
 		moveParticles!(plist)
 		burgersParticleManagement!(plist)
-		if step % 20 == 0
-			println("Step ", step, ", time = ", t)
+		if step % 10 == 0
+			println("Step ", step, ", time = ", t, ", time step = ", plist.gdt, ", n = ", plist.n)
 		end
 		t += plist.gdt
 		step += 1
 	end
+	println("Time loop exited. Steps = ", step, ", time = ", t)
 
 	# get solution arrays
 	xsol,usol = outputToArrays(plist)
+	return (xsol,usol)
 end
 
-plist = ParticleList(5,0.0,0.0)
-xp = linspace(plist.xstart,plist.xend,plist.n)
-vp = ones(plist.n)
-up = zeros(plist.n)
-initialize!(plist,xp,vp,up)
-Particles.printList(plist)
+# main
+
+N = 150
+xstart = 0.0
+xend = 4*pi
+finaltime = 2.0
+maxtimesteps = 1000
+
+println("Hyparticle for Burgers' equation - Initial data:")
+println("  h = ", (xend-xstart)/N, ", final time = ", finaltime)
+xso,uso=burgersLoop(N,xstart,xend,finaltime,maxtimesteps)
+plot(xso,uso)
+grid("on")
+show()
+println()
