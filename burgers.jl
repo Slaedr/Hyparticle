@@ -41,13 +41,18 @@ Value of the inserted particle is computed from local conservation.
 function burgersParticleManagement!(p::ParticleList)
 	prev = p.first
 	cur = p.first.next
-	for i = 2:p.n-2
+	i = 2
+
+	# because of the way cur moves, we need a while-limit that's independent of p.n
+	nlim = p.n-2
+
+	while i <= nlim
 		nxt = cur.next
 		dist = nxt.x - cur.x
 		if dist < p.dmin
 			# remove the two particles and insert a new one
+
 			newp = Particle()
-			# compute the new particle's converved variable
 			x1 = prev.x; x2 = cur.x; x23 = (nxt.x+cur.x)/2.0; x3 = nxt.x; x4 = nxt.next.x
 			u1 = prev.u; u2 = cur.u; u3 = nxt.u; u4 = nxt.next.u
 			tworexp = (x2-x1)*(u2+u1) + (x3-x2)*(u3+u2) + (x4-x3)*(u4+u3)
@@ -58,9 +63,14 @@ function burgersParticleManagement!(p::ParticleList)
 			newp.next = nxt.next
 			prev.next = newp
 			p.n -= 1
+			nlim -= 1 
+			# note that nlim mirrors p.n for this, cur moves 1 node forward
+
 			cur = newp
+
 		elseif dist > p.dmax
-			# insert a new particle, update n
+			# insert a new particle
+			
 			newp = Particle()
 			x2 = cur.x; x3 = nxt.x; x23 = (nxt.x+cur.x)/2.0
 			u2 = cur.u; u3 = nxt.u
@@ -71,13 +81,18 @@ function burgersParticleManagement!(p::ParticleList)
 
 			newp.next = nxt
 			cur.next = newp
+			p.n += 1 
+			# note that nlim is not updated as cur moves 2 nodes forward
+
 			cur = nxt
-			p.n += 1
+			prev = newp
+
 		else
-			# nothing to do, move on
 			prev = cur
 			cur = cur.next
+
 		end
+		i += 1
 	end
 end
 
@@ -102,15 +117,13 @@ function applyDirichletBC!(p::ParticleList, bvalue::Particles.real)
 	cur = p.first.next
 	prev = p.first
 	for i = 3:p.n
-		print(cur.x, " ", cur.u, ", ")
 		cur = cur.next
 		prev = prev.next
 	end
 	if cur.x > p.xend
-		prev.next = nothing
+		prev.next = 0
 		p.n -= 1
 	end
-	println(" ")
 end
 
 """
@@ -140,8 +153,6 @@ function burgersLoop(N, xstart, xend, bvalue, initamp, ttime, maxiter)
 	pos = linspace(xstart,xend,N)
 	uval = initsin(pos,bvalue,initamp)
 	vval = zeros(uval); vval[:] = uval[:]
-	#plot(pos,vval)
-	#show()
 	initialize!(plist,pos,vval,uval)
 
 	t = 0; step = 0
@@ -170,13 +181,17 @@ xstart = 0.0
 xend = 4*pi
 bvalue = 1.5
 amplitude = 1.0
-finaltime = 2.0
-maxtimesteps = 100
+finaltime = 3.0
+maxtimesteps = 1000
 
 println("Hyparticle for Burgers' equation - Initial data:")
 println("  N = ", N, ", h = ", (xend-xstart)/N, ", final time = ", finaltime)
+
 xso,uso=burgersLoop(N,xstart,xend,bvalue,amplitude,finaltime,maxtimesteps)
-plot(xso,uso)
+
+plot(xso,uso,"o-")
+xlabel("x")
+ylabel("u")
 grid("on")
 show()
 println()
