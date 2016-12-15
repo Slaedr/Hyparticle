@@ -37,15 +37,19 @@ One step of particle management. Note that boundaries are not treated.
 When distance between adjacent particles is greater than dmax, a new particle is inserted.
 when distance between adjacent particles is less than dmin, the two particles are deleted and a new one is inserted.
 Value of the inserted particle is computed from local conservation.
+Note: shocklist contains references to particles just before shocks, not the shock particles themselves.
 """
 function burgersParticleManagement!(p::ParticleList)
 	prev = p.first
 	cur = p.first.next
-	i = 2
+
+	# We also want to return a list of shock particles
+	shocklist = []
 
 	# because of the way cur moves, we need a while-limit that's independent of p.n
 	nlim = p.n-2
 
+	i = 2
 	while i <= nlim
 		nxt = cur.next
 		dist = nxt.x - cur.x
@@ -59,11 +63,12 @@ function burgersParticleManagement!(p::ParticleList)
 			newp.u = (tworexp - (x23-x1)*u1 - (x4-x23)*u4)/(x4-x1)
 			newp.x = x23
 			newp.v = newp.u
-			# add the new particle to the list
+			# add the new particle to the list and to the list of shock particles
 			newp.next = nxt.next
 			prev.next = newp
 			p.n -= 1
-			nlim -= 1 
+			nlim -= 1
+			push!(shocklist,prev)
 			# note that nlim mirrors p.n for this, cur moves 1 node forward
 
 			cur = newp
@@ -94,6 +99,7 @@ function burgersParticleManagement!(p::ParticleList)
 		end
 		i += 1
 	end
+	return shocklist
 end
 
 """
@@ -143,6 +149,37 @@ function initsin(xarr,bval,amp)
 end
 
 """
+Postprocesses neighborhoods of shocks to locate them with second-order accuracy.
+"""
+function locateShocks(p::ParticleList, shocklist::Array{Particle})
+	for part in shocklist
+		# TODO: replace the shock particle with 2 particles at the same position
+	end
+end
+
+"""
+Computes values of the conserved variable on a uniformly spaced grid with ngraph points
+based on conservative interpolation.
+For Burgers' equation, this is a linear interpolation.
+"""
+function getBurgersInterpolant(p::ParticleList, ngraph)
+	xp,up = outputToArrays(p)
+	xarr = linspace(p.xstart,p.xend,ngraph)
+	varr = zeros(xarr)
+	ip = 1
+	i = 1
+	while i <= ngraph
+		if xarr[i] <= xp[ip+1] || ip == p.n
+			varr[i] = up[ip] + (up[ip+1]-up[ip])/(xp[ip+1]-xp[ip])*(xarr[i]-xp[ip])
+			i += 1
+		else
+			ip += 1
+		end
+	end
+	return (xarr,varr)
+end
+
+"""
 Main time-stepping loop for Burgers' equation.
 """
 function burgersLoop(N, xstart, xend, bvalue, initamp, ttime, maxiter)
@@ -154,12 +191,13 @@ function burgersLoop(N, xstart, xend, bvalue, initamp, ttime, maxiter)
 	uval = initsin(pos,bvalue,initamp)
 	vval = zeros(uval); vval[:] = uval[:]
 	initialize!(plist,pos,vval,uval)
+	shockparticles = []
 
 	t = 0; step = 0
 	while t < ttime && step < maxiter
 		burgersTimeSteps!(plist)
 		moveParticles!(plist)
-		burgersParticleManagement!(plist)
+		shockparticles = burgersParticleManagement!(plist)
 		applyDirichletBC!(plist,bvalue)
 		if step % 10 == 0
 			println("Step ", step, ", time = ", t, ", time step = ", plist.gdt, ", n = ", plist.n)
