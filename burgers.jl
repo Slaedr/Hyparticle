@@ -150,10 +150,23 @@ end
 
 """
 Postprocesses neighborhoods of shocks to locate them with second-order accuracy.
+Replaces the shock particle with 2 particles at the same position
 """
 function locateShocks(p::ParticleList, shocklist::Array{Particle})
 	for part in shocklist
-		# TODO: replace the shock particle with 2 particles at the same position
+		# compute the new location
+		x1 = part.x; x2 = part.next.x; x3 = part.next.next.x
+		u1 = part.u; u2 = part.next.u; u3 = part.next.next.u
+		xnew = (x3*u3 - x1*u1 + x1*(u1+u2)/2.0 - x3*(u2+u3)/2.0)/((u1+u2)/2.0 - (u2+u3)/2.0 + u3 -u1);
+		# Create the particles and add them - the original shock particle is removed
+		p1 = Particle(); p2 = Particle()
+		p1.x = xnew; p1.u = u1; p1.v = p1.u
+		p2.x = xnew; p2.u = u3; p2.v = p2.u
+		last = part.next.next
+		part.next = p1
+		p1.next = p2
+		p2.next = last
+		p.n += 1
 	end
 end
 
