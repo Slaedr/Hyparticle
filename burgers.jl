@@ -44,7 +44,7 @@ function burgersParticleManagement!(p::ParticleList)
 	cur = p.first.next
 
 	# We also want to return a list of shock particles
-	shocklist = []
+	shocklist::Array{Particle} = []
 
 	# because of the way cur moves, we need a while-limit that's independent of p.n
 	nlim = p.n-2
@@ -119,14 +119,16 @@ function applyDirichletBC!(p::ParticleList, bvalue::Particles.real)
 		p.n += 1
 	end
 
-	# check for particles that have overshot the right boundary
+	#= Check for particles that have overshot the right boundary.
+	# Note that a particle is deleted only when the previous particle goes out of the domain
+	# so that the region convered by the particles always covers the domain. =#
 	cur = p.first.next
 	prev = p.first
 	for i = 3:p.n
 		cur = cur.next
 		prev = prev.next
 	end
-	if cur.x > p.xend
+	if prev.x > p.xend
 		prev.next = 0
 		p.n -= 1
 	end
@@ -152,7 +154,8 @@ end
 Postprocesses neighborhoods of shocks to locate them with second-order accuracy.
 Replaces the shock particle with 2 particles at the same position
 """
-function locateShocks(p::ParticleList, shocklist::Array{Particle})
+function locateShocks!(p::ParticleList, shocklist::Array{Particle})
+	println("locateShocks: Number of shock particles = ", length(shocklist))
 	for part in shocklist
 		# compute the new location
 		x1 = part.x; x2 = part.next.x; x3 = part.next.next.x
@@ -182,7 +185,7 @@ function getBurgersInterpolant(p::ParticleList, ngraph)
 	ip = 1
 	i = 1
 	while i <= ngraph
-		if xarr[i] <= xp[ip+1] || ip == p.n
+		if xarr[i] <= xp[ip+1] # || ip == p.n
 			varr[i] = up[ip] + (up[ip+1]-up[ip])/(xp[ip+1]-xp[ip])*(xarr[i]-xp[ip])
 			i += 1
 		else
@@ -195,7 +198,7 @@ end
 """
 Main time-stepping loop for Burgers' equation.
 """
-function burgersLoop(N, xstart, xend, bvalue, initamp, ttime, maxiter)
+function burgersLoop(N, xstart, xend, bvalue, initamp, ttime, maxiter,ngraph)
 
 	plist = ParticleList(N, xstart, xend)
 
@@ -204,7 +207,7 @@ function burgersLoop(N, xstart, xend, bvalue, initamp, ttime, maxiter)
 	uval = initsin(pos,bvalue,initamp)
 	vval = zeros(uval); vval[:] = uval[:]
 	initialize!(plist,pos,vval,uval)
-	shockparticles = []
+	shockparticles::Array{Particle} = []
 
 	t = 0; step = 0
 	while t < ttime && step < maxiter
@@ -221,28 +224,9 @@ function burgersLoop(N, xstart, xend, bvalue, initamp, ttime, maxiter)
 	println("Time loop exited. Steps = ", step, ", time = ", t)
 
 	# get solution arrays
+	locateShocks!(plist,shockparticles)
+	#xsol,usol = getBurgersInterpolant(plist,ngraph)
 	xsol,usol = outputToArrays(plist)
 	return (xsol,usol)
 end
 
-# main
-
-N = 200
-xstart = 0.0
-xend = 4*pi
-bvalue = 1.5
-amplitude = 1.0
-finaltime = 3.0
-maxtimesteps = 1000
-
-println("Hyparticle for Burgers' equation - Initial data:")
-println("  N = ", N, ", h = ", (xend-xstart)/N, ", final time = ", finaltime)
-
-xso,uso=burgersLoop(N,xstart,xend,bvalue,amplitude,finaltime,maxtimesteps)
-
-plot(xso,uso,"o-")
-xlabel("x")
-ylabel("u")
-grid("on")
-show()
-println()

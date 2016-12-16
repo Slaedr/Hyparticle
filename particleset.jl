@@ -95,6 +95,24 @@ function outputToArrays(p::ParticleList)
 	return (xout,uout)
 end
 
+"""
+Copies the particles' positions and conserved variable values into arrays and returns them.
+Also returns a list of indices (into output arrays) of particles just before shock particles.
+"""
+function outputToArraysWithShocks(p::ParticleList, shocklist::Array{Particle})
+	xout = zeros(p.n)
+	uout = zeros(p.n)
+	shockindices = []
+
+	cur = p.first
+	for i = 1:p.n
+		xout[i] = cur.x
+		uout[i] = cur.u
+		cur = cur.next
+	end
+	return (xout,uout)
+end
+
 """ For debugging"""
 function printList(plist::ParticleList)
 	cur = plist.first
