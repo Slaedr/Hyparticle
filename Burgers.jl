@@ -1,9 +1,13 @@
 #= Implements particle based solution of the inviscid Burgers' equation
 =#
 
-include("particleset.jl")
+include("Particles.jl")
+
+module Burgers
+
+export burgersLoop
+
 using Particles
-using PyPlot
 
 """
 Computes the allowable time step for each particle based on current positions and speeds for Burgers' flux.
@@ -111,7 +115,7 @@ function applyDirichletBC!(p::ParticleList, bvalue::Particles.real)
 	# if the fisrt particle is too far from the left boundary, insert a new particle
 	if p.first.x - p.xstart > p.dmax
 		newp = Particle()
-		newp.x = xstart
+		newp.x = p.xstart
 		newp.u = bvalue
 		newp.v = newp.u
 		newp.next = p.first
@@ -208,6 +212,7 @@ function burgersLoop(N, xstart, xend, bvalue, initamp, ttime, maxiter,ngraph)
 	vval = zeros(uval); vval[:] = uval[:]
 	initialize!(plist,pos,vval,uval)
 	shockparticles::Array{Particle} = []
+	nfin = 0
 
 	t = 0; step = 0
 	while t < ttime && step < maxiter
@@ -222,11 +227,13 @@ function burgersLoop(N, xstart, xend, bvalue, initamp, ttime, maxiter,ngraph)
 		step += 1
 	end
 	println("Time loop exited. Steps = ", step, ", time = ", t)
+	nfin = plist.n
 
 	# get solution arrays
-	locateShocks!(plist,shockparticles)
-	#xsol,usol = getBurgersInterpolant(plist,ngraph)
-	xsol,usol = outputToArrays(plist)
-	return (xsol,usol)
+	#locateShocks!(plist,shockparticles)
+	xsol,usol = getBurgersInterpolant(plist,ngraph)
+	#xsol,usol = outputToArrays(plist)
+	return (xsol,usol,nfin)
 end
 
+end

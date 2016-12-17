@@ -1,0 +1,82 @@
+% $ biblatex auxiliary file $
+% $ biblatex version 2.6 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated as
+% required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+\entry{julia}{article}{}
+  \name{author}{4}{}{%
+    {{}%
+     {Bezanson}{B.}%
+     {Jeff}{J.}%
+     {}{}%
+     {}{}}%
+    {{}%
+     {Karpinski}{K.}%
+     {Stefan}{S.}%
+     {}{}%
+     {}{}}%
+    {{}%
+     {Shah}{S.}%
+     {Viral~B.}{V.~B.}%
+     {}{}%
+     {}{}}%
+    {{}%
+     {Edelman}{E.}%
+     {Alan}{A.}%
+     {}{}%
+     {}{}}%
+  }
+  \strng{namehash}{BJ+1}
+  \strng{fullhash}{BJKSSVBEA1}
+  \field{sortinit}{B}
+  \field{title}{Julia: {A} Fast Dynamic Language for Technical Computing}
+  \verb{url}
+  \verb http://arxiv.org/abs/1209.5145
+  \endverb
+  \field{volume}{abs/1209.5145}
+  \field{journaltitle}{CoRR}
+  \field{year}{2012}
+\endentry
+
+\entry{particle}{article}{}
+  \name{author}{2}{}{%
+    {{}%
+     {Farjoun}{F.}%
+     {Y.}{Y.}%
+     {}{}%
+     {}{}}%
+    {{}%
+     {Seibold}{S.}%
+     {B.}{B.}%
+     {}{}%
+     {}{}}%
+  }
+  \strng{namehash}{FYSB1}
+  \strng{fullhash}{FYSB1}
+  \field{sortinit}{F}
+  \field{number}{14}
+  \field{pages}{5298\bibrangedash 5315}
+  \field{title}{An exactly conservative particle method for one-dimensional
+  scalar conservation laws}
+  \field{volume}{228}
+  \field{journaltitle}{Journal of Computational Physics}
+  \field{year}{2009}
+\endentry
+
+\lossort
+\endlossort
+
+\endinput
