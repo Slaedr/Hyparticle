@@ -81,7 +81,7 @@ where we bear in mind that $x_1$ and $x_2$ are particle positions that change wi
 \begin{equation}
 \frac{d}{dt}\int_{x_1(t)}^{x_2(t)}u(x,t)dx = (f_u(x_2,u_2)u_2 - f(x_2,u_2))-(f_u(x_1,u_1)u_1-f(x_1,u_1))
 \end{equation}
-It is shown by Farjoun and Seibold that if the flux is a function of only the conserved variable $u$ and not time, that
+It is shown by Farjoun and Seibold that if the flux is a function of only the conserved variable $u$ and not space $x$, then
 \begin{equation}
 \frac{d}{dt}\int_{x_1(t)}^{x_2(t)}u(x,t)dx = (x_2(t)-x_1(t))a_f(u_1,u_2)
 \label{eq:area}
@@ -90,7 +90,7 @@ where
 \begin{equation}
 a_f(u_1,u_2) = \frac{[f'(u)-f(u)]_{u_1}^{u_2}}{[f'(u)]_{u_1}^{u_2}}.
 \end{equation}
-For Burgers' equation is
+For Burgers' equation this is
 \begin{equation}
 a_f(u_1,u_2) = \frac{u_1+u_2}{2}.
 \end{equation}
@@ -105,7 +105,7 @@ If $x_3-x_2 > d_{\mathrm{max}}$, we insert a new particle at $x_{23}$, such that
 \begin{equation}
 (x_{23}-x_2)a(u_2,u_{23})+(x_3-x_{23})a(u_{23},u_3) = (x_3-x_2)a(u_2,u_3)
 \end{equation}
-We choose $x_23 = (x_2+x_3)/2$ and find $u_{23}$ by the above equation. For $d_{\mathrm{max}}$, the value $4/3h_i$ ($h_i$ is the initial particle spacing) is suggested based on the fact that in the experience of Farjoun and Seibold, the number of particles does not change too much over the course of the simulation \cite{particle}.
+We choose $x_23 = (x_2+x_3)/2$ and find $u_{23}$ by the above equation. For $d_{\mathrm{max}}$, the value $4h_i/3$ ($h_i$ is the initial particle spacing) is suggested based on the fact that in the experience of Farjoun and Seibold, the number of particles does not change too much over the course of the simulation \cite{particle}.
 
 \subsection{Merge}
 If $x_3-x_2 < d_{\mathrm{min}}$, we replace the particles at $x_2$ and $x_3$ with a single particle at $x_{23}$ with value $u_{23}$.
@@ -128,7 +128,7 @@ In case of Burgers' equation, this can be explicitly solved for $v$ in terms of 
 It has been shown that the method is second-order accurate away from shocks and is total variation diminishing.
 
 \subsection{Shock treatment}
-A `shock location' step has to be performed in order to achieve second-order accuracy in presence of shocks, according to Farjoun and Seibold, as the method uptil now tracks shocks with first order accuracy in general. This is done as follows. After a particle merge step, the new middle is marked as a shock particle. After the final time is reached, before plotting or otherwise using the solution, we can replace each shock particle at $x_j$ by two particles, both at some location $\tilde{x}$. The value of one particle is taken as $u_{j-1}$ and that of the other as $u_j$. The new position $\tilde{x}$ is computed from conservation in $(x_{j-1},x_{j+1})$:
+A `shock location' step has to be performed in order to achieve second-order accuracy in presence of shocks, according to Farjoun and Seibold, as the method uptil now locates shocks with first order accuracy in general. This is done as follows. After a particle merge step, the new middle is marked as a shock particle. After the final time is reached, before plotting or otherwise using the solution, we can replace each shock particle at $x_j$ by two particles, both at some location $\tilde{x}$. The value of one particle is taken as $u_{j-1}$ and that of the other as $u_j$. The new position $\tilde{x}$ is computed from conservation in $(x_{j-1},x_{j+1})$:
 \begin{equation}
 (\tilde{x}-x_{j-1})a(u_{j-1},u_{j-1}) + (x_{j+1},\tilde{x})a(u_{j+1},u_{j+1}) = (x_{j+1}-x_{j-1})a(u_{j-1},u_{j+1})
 \end{equation}
@@ -142,7 +142,7 @@ However, in our tests, for Burgers' equation, second order accuracy is achieved 
 \section{Implementation}
 We mention a few notes about the implementation.
 
-Since particles may need to be added or deleted anywhere, an array is not a good data structure. A linked list was coded, which allows efficient addition and deletion, at the cost of more expensive iteration through the particles.
+Since particles may need to be added or deleted anywhere, an array may not be a good data structure. A linked list was coded, which allows efficient addition and deletion, at the cost of more expensive iteration through the particles.
 
 Next, conservative particle management is cheap for a quadratic flux functions, as the $a$ function is simply a linear function of the state variables. This fact is used in our implementation. For higher degree flux functions, a Newton iteration is required to solve for the location or state of the new particles.
 
